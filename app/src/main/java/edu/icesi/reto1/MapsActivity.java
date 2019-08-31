@@ -1,7 +1,10 @@
 package edu.icesi.reto1;
 
 import androidx.core.app.ActivityCompat;
+import androidx.fragment.app.Fragment;
 import androidx.fragment.app.FragmentActivity;
+import androidx.fragment.app.FragmentManager;
+import androidx.fragment.app.FragmentTransaction;
 
 import android.Manifest;
 import android.annotation.SuppressLint;
@@ -13,6 +16,7 @@ import android.location.LocationListener;
 import android.location.LocationManager;
 import android.os.Bundle;
 import android.util.Pair;
+import android.view.View;
 import android.widget.Button;
 import android.widget.TextView;
 
@@ -20,17 +24,21 @@ import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.OnMapReadyCallback;
 import com.google.android.gms.maps.SupportMapFragment;
+import com.google.android.gms.maps.model.BitmapDescriptorFactory;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.Marker;
 import com.google.android.gms.maps.model.MarkerOptions;
 import com.google.android.gms.maps.model.Polygon;
 
 import java.io.IOException;
+import java.text.DecimalFormat;
 import java.util.ArrayList;
 import java.util.Locale;
 
 public class MapsActivity extends FragmentActivity implements OnMapReadyCallback, GoogleMap.OnMapLongClickListener, LocationListener,
-        GoogleMap.OnMarkerClickListener {
+        GoogleMap.OnMarkerClickListener, AddDialog.AddDialogListener {
+
+    private static final String TAG = "MapsActivity";
 
     private GoogleMap mMap;
     private Marker locationUser;
@@ -49,6 +57,18 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         SupportMapFragment mapFragment = (SupportMapFragment) getSupportFragmentManager()
                 .findFragmentById(R.id.map);
         mapFragment.getMapAsync(this);
+
+        addMarker = findViewById(R.id.add_btn);
+        siteText = findViewById(R.id.site_tv);
+
+        addMarker.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+
+               openDialog();
+
+            }
+        });
 
         ActivityCompat.requestPermissions(this, new String[]{
                 Manifest.permission.ACCESS_COARSE_LOCATION,
@@ -79,7 +99,9 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 
         // Add a marker in Sydney and move the camera
         LatLng sydney = new LatLng(-34, 151);
-        locationUser = mMap.addMarker(new MarkerOptions().position(sydney).title("Usted"));
+        locationUser = mMap.addMarker(new MarkerOptions().position(sydney).title("Usted").icon(
+                BitmapDescriptorFactory.fromResource(R.drawable.marker_user)
+        ));
         mMap.animateCamera(CameraUpdateFactory.newLatLngZoom(sydney, 15));
 
         LocationManager manager = (LocationManager) getSystemService(LOCATION_SERVICE);
@@ -92,6 +114,31 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         LatLng pos = new LatLng(location.getLatitude(), location.getLongitude());
         locationUser.setPosition(pos);
         mMap.animateCamera(CameraUpdateFactory.newLatLngZoom(pos, 15));
+
+
+        if(markers.size()> 0 ) {
+
+            Marker nearest = markers.get(0);
+            double distanceNearest = calculateDistance(locationUser, nearest);
+
+            for (Marker marker : markers
+            ) {
+                double distance = calculateDistance(locationUser, marker);
+                if (distance < distanceNearest) {
+                    distanceNearest = distance;
+                    nearest = marker;
+
+                }
+            }
+
+            if (distanceNearest < 50.0) {
+                siteText.setText("Usted se encuentra en " + nearest.getTitle());
+            } else {
+                siteText.setText("El sitio mas cerca es " + nearest.getTitle());
+            }
+        }else{
+            siteText.setText("No hay marcadores agregados");
+        }
     }
 
     @Override
@@ -111,7 +158,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 
     @Override
     public void onMapLongClick(LatLng latLng) {
-        Marker marker =  mMap.addMarker(new MarkerOptions().position(latLng));
+        Marker marker =  mMap.addMarker(new MarkerOptions().position(latLng).title("FaltaNombrar"));
         markers.add(marker);
     }
 
@@ -125,9 +172,41 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
             } catch (IOException e) {
                 e.printStackTrace();
             }
+        }
 
+        DecimalFormat df = new DecimalFormat("#.##");
 
+        boolean found = false;
+        for(int i = 0; i<markers.size() && !found; i++){
+            if(marker.equals(markers.get(i))){
+                found = true;
+                double distance = calculateDistance(locationUser, markers.get(i));
+                markers.get(i).setSnippet("Este marcador esta a : " + df.format(distance) + " metros" );
+            }
         }
         return false;
+    }
+
+
+    public double calculateDistance(Marker a, Marker b){
+
+        double distance = Math.sqrt(Math.pow(a.getPosition().latitude-b.getPosition().latitude, 2)
+                + Math.pow(a.getPosition().longitude-b.getPosition().longitude,2));
+
+        distance = distance* 111.2 * 1000;;
+
+
+        return distance;
+    }
+
+    public void openDialog(){
+        AddDialog addDialog = new AddDialog();
+        addDialog.show(getSupportFragmentManager(), "AddDialog");
+    }
+
+    @Override
+    public void getMarkerName(String markerName) {
+        //TO DO
+        siteText.setText(markerName);
     }
 }
