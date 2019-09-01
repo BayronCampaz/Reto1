@@ -47,6 +47,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     private Button addMarker;
     private TextView siteText;
     private boolean selectionMode;
+    private String lastNameMarker;
 
 
     @Override
@@ -76,6 +77,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         }, 11);
 
         markers = new ArrayList<Marker>();
+        selectionMode = false;
     }
 
 
@@ -115,30 +117,32 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         locationUser.setPosition(pos);
         mMap.animateCamera(CameraUpdateFactory.newLatLngZoom(pos, 15));
 
+        if(!selectionMode){
+            if(markers.size()> 0 ) {
 
-        if(markers.size()> 0 ) {
+                Marker nearest = markers.get(0);
+                double distanceNearest = calculateDistance(locationUser, nearest);
 
-            Marker nearest = markers.get(0);
-            double distanceNearest = calculateDistance(locationUser, nearest);
+                for (Marker marker : markers
+                ) {
+                    double distance = calculateDistance(locationUser, marker);
+                    if (distance < distanceNearest) {
+                        distanceNearest = distance;
+                        nearest = marker;
 
-            for (Marker marker : markers
-            ) {
-                double distance = calculateDistance(locationUser, marker);
-                if (distance < distanceNearest) {
-                    distanceNearest = distance;
-                    nearest = marker;
-
+                    }
                 }
-            }
 
-            if (distanceNearest < 50.0) {
-                siteText.setText("Usted se encuentra en " + nearest.getTitle());
-            } else {
-                siteText.setText("El sitio mas cerca es " + nearest.getTitle());
+                if (distanceNearest < 50.0) {
+                    siteText.setText("Usted se encuentra en " + nearest.getTitle());
+                } else {
+                    siteText.setText("El sitio mas cerca es " + nearest.getTitle());
+                }
+            }else{
+                siteText.setText("No hay marcadores agregados");
             }
-        }else{
-            siteText.setText("No hay marcadores agregados");
         }
+
     }
 
     @Override
@@ -158,8 +162,12 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 
     @Override
     public void onMapLongClick(LatLng latLng) {
-        Marker marker =  mMap.addMarker(new MarkerOptions().position(latLng).title("FaltaNombrar"));
-        markers.add(marker);
+        if(selectionMode){
+            Marker marker =  mMap.addMarker(new MarkerOptions().position(latLng).title(lastNameMarker));
+            markers.add(marker);
+            selectionMode = false;
+        }
+
     }
 
     @Override
@@ -206,7 +214,8 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 
     @Override
     public void getMarkerName(String markerName) {
-        //TO DO
-        siteText.setText(markerName);
+        selectionMode = true;
+        lastNameMarker = markerName;
+        siteText.setText("Seleccione un punto");
     }
 }
