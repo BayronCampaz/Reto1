@@ -100,11 +100,11 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         mMap.setOnMarkerClickListener(this);
 
         // Add a marker in Sydney and move the camera
-        LatLng sydney = new LatLng(-34, 151);
-        locationUser = mMap.addMarker(new MarkerOptions().position(sydney).title("Usted").icon(
+        LatLng icesi = new LatLng(3.342262, -76.529901);
+        locationUser = mMap.addMarker(new MarkerOptions().position(icesi).title("Usted").icon(
                 BitmapDescriptorFactory.fromResource(R.drawable.marker_user)
         ));
-        mMap.animateCamera(CameraUpdateFactory.newLatLngZoom(sydney, 15));
+        mMap.animateCamera(CameraUpdateFactory.newLatLngZoom(icesi, 15));
 
         LocationManager manager = (LocationManager) getSystemService(LOCATION_SERVICE);
         manager.requestLocationUpdates(LocationManager.GPS_PROVIDER,  1000, 0, this);
@@ -113,34 +113,13 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 
     @Override
     public void onLocationChanged(Location location) {
+
         LatLng pos = new LatLng(location.getLatitude(), location.getLongitude());
         locationUser.setPosition(pos);
         mMap.animateCamera(CameraUpdateFactory.newLatLngZoom(pos, 15));
 
         if(!selectionMode){
-            if(markers.size()> 0 ) {
-
-                Marker nearest = markers.get(0);
-                double distanceNearest = calculateDistance(locationUser, nearest);
-
-                for (Marker marker : markers
-                ) {
-                    double distance = calculateDistance(locationUser, marker);
-                    if (distance < distanceNearest) {
-                        distanceNearest = distance;
-                        nearest = marker;
-
-                    }
-                }
-
-                if (distanceNearest < 50.0) {
-                    siteText.setText("Usted se encuentra en " + nearest.getTitle());
-                } else {
-                    siteText.setText("El sitio mas cerca es " + nearest.getTitle());
-                }
-            }else{
-                siteText.setText("No hay marcadores agregados");
-            }
+            showMarkerNearest();
         }
 
     }
@@ -166,6 +145,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
             Marker marker =  mMap.addMarker(new MarkerOptions().position(latLng).title(lastNameMarker));
             markers.add(marker);
             selectionMode = false;
+            showMarkerNearest();
         }
 
     }
@@ -201,7 +181,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         double distance = Math.sqrt(Math.pow(a.getPosition().latitude-b.getPosition().latitude, 2)
                 + Math.pow(a.getPosition().longitude-b.getPosition().longitude,2));
 
-        distance = distance* 111.2 * 1000;;
+        distance = distance* 111.2 * 1000;
 
 
         return distance;
@@ -217,5 +197,32 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         selectionMode = true;
         lastNameMarker = markerName;
         siteText.setText("Seleccione un punto");
+    }
+
+
+    public void showMarkerNearest(){
+        if(markers.size()> 0 ) {
+
+            Marker nearest = markers.get(0);
+            double distanceNearest = calculateDistance(locationUser, nearest);
+
+            for (Marker marker : markers
+            ) {
+                double distance = calculateDistance(locationUser, marker);
+                if (distance < distanceNearest) {
+                    distanceNearest = distance;
+                    nearest = marker;
+
+                }
+            }
+
+            if (distanceNearest < 50.0) {
+                siteText.setText("Usted se encuentra en " + nearest.getTitle());
+            } else {
+                siteText.setText("El sitio mas cerca es " + nearest.getTitle());
+            }
+        }else{
+            siteText.setText("No hay marcadores agregados");
+        }
     }
 }

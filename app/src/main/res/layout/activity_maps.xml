@@ -24,7 +24,7 @@
     <TextView
         android:layout_width="match_parent"
         android:layout_height="90dp"
-        android:text="No hay ningun marcador "
+        android:text="No hay marcadores agregados"
         android:textSize="30sp"
         android:layout_alignParentBottom="true"
         android:layout_marginBottom="10dp"
